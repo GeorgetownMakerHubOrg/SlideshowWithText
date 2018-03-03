@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">  
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" type="text/css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		  <?!= include("STYLESHEET_SLIDESHOW"); ?>   
+<script
+		  src="https://code.jquery.com/jquery-3.2.1.min.js"
+		  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+		  crossorigin="anonymous"></script>
+          
+		<script
+		  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+		  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+		  crossorigin="anonymous"></script>
+          
+<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.1/masonry.pkgd.js" integrity="sha256-UIybuWmmRkFdYToN0IPzeEUzMe4RzG0vI3Ot4d4S7b8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-linkify/2.1.5/linkify.min.js" integrity="sha256-/qh8j6L0/OTx+7iY8BAeLirxCDBsu3P15Ci5bo7BJaU=" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-linkify/2.1.5/linkify-plugin-mention.min.js" integrity="sha256-gpOOY/iEuG7hLZos2lAsqa0vVo+MIRjfnywD8Af7DjQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-linkify/2.1.5/linkify-plugin-hashtag.min.js" integrity="sha256-ynl1+BbnAfeB38e7LwALb57PZOVebyZbGN6Rq0fnmE0=" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+    
+  </head>
+  <body>
+  this??
+  <img id="testimg" src=""/>
+<div class="masonry js-masonry" id="container">
+		<div class="menuicon"><i class="fa fa-cog"></i></div>
+		<div class="grid-sizer"></div>
+		<div class="gutter-sizer"></div>
+		<!--
+		<div class='item'><img width=100%  src='http://images2.fanpop.com/image/photos/10900000/cat-random-10941617-450-442.jpg'/></div>
+		<div class='item'><img width=100%  src='http://images2.fanpop.com/image/photos/10900000/cat-random-10941617-450-442.jpg'/></div>
+-->
+	</div>
+
+
+<script type="text/javascript">
+
+var msnry;
+
+
+
+
+
+
+
+
+$(function(){
+
+
+console.log("starting");
+
+var container = document.querySelector('#container');
+msnry = new Masonry( container, {
+  // options
+        itemSelector: ".item",
+        columnWidth: ".grid-sizer",
+        gutter: ".gutter-sizer"
+    });
+/*
+    msnry = $('#container').masonry({
+        "itemSelector": ".item",
+        "columnWidth": ".grid-sizer",
+    });
+*/
+
+
+//	$("grid-sizer").hide();
+    var dbItemStack = [];
+
+	var placedItems = [];
+
+	var itemTimingMS = 5000;
+	var maxStackSize = 30;
+	var maxPlacedItems = 20;
+	var stackTimingMS = itemTimingMS * maxStackSize;
+
+	var searchTerms = ["gumakerhub"];
+
+
+	var prefData = {};
+	console.log("ready");
+	var container = document.querySelector('#container');
+
+	var first = true;
+
+	var getStack = function(){
+		getNewDBStack();
+//		getNewInstagramStack();
+	}
+
+    var getNewDBStack = function(){
+    console.log("getting stack");
+      google.script.run
+      .withFailureHandler(function(msg){
+        console.log("error");
+        console.log(msg);
+      })
+      .withSuccessHandler(function(data){
+        console.log(data);
+        dbItemStack = data.data;
+        console.log(dbItemStack);
+      }).
+      getAllFileData();
+    
+    }
+
+
+    var currentIndex = 0;
+    
+    var loadNewItem = function(index){
+      console.log("loadnewitem " + index);
+      var item = dbItemStack[index];
+      if(!item){
+        return;
+      }
+      console.log(item);
+      google.script.run
+      .withFailureHandler(function(msg){
+        console.log("Error");
+        console.log(msg);
+      })
+      .withSuccessHandler(function(data){
+        console.log("got file blob");
+        console.log(data);
+        console.log(typeof data.blob[0]);
+        var bytes = new Uint8Array(data.blob.length);
+        for (var i=0; i<data.blob.length; i++){
+//          console.log(data.blob.charCodeAt(i));
+          bytes[i] = data.blob[i];        
+        }
+        var blobtext = URL.createObjectURL(new Blob(bytes, {type: data.contentType}));
+        console.log(blobtext);
+        $("#testimg").attr("src",blobtext);
+      })
+      .getFileBlob(item.filename);
+    }
+
+	var placeItem = function(item){
+
+		var imgUrl = false;
+		var imgString = "";
+		if(item.imgUrl){
+			imgUrl = item.imgUrl;
+			imgString = "<img width='100%' src='"+imgUrl+"'/>";
+		}
+		console.log(item);
+		var text = item.text;
+		var item_class="";
+		var sizer_class= "item";
+		if(first){
+			//sizer_class = "grid-sizer";
+			first = false;
+		}
+//		item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='metadata'>"+item.source+": "+ item.user+"</span>&nbsp;<span class='time'>"+item.time+"</span></div>").hide();
+		item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='metadata'> "+ item.user+"</span>&nbsp;<span class='time'>"+item.time+"</span></div>").hide();
+		$(".caption", item).linkify(function (links){ $(links).attr("target", "_blank"); });
+		$("#container").prepend(item);
+		imagesLoaded(item, function() {
+			console.log("image loaded");
+			item.show();
+			msnry.prepended(item);
+	//	  msnry.layout();
+		});		
+
+
+	}
+
+
+	var itemLoopStopped = false;
+    var currentIndex = 0;
+
+	var itemLoop = function(){
+		if(!itemLoopStopped){
+			loadNewItem(currentIndex);
+		}
+        currentIndex++;
+        if(currentIndex >= dbItemStack.length){
+          currentIndex = 0;
+        }        
+		setTimeout(itemLoop, itemTimingMS);
+	}
+
+	var stackLoop = function(){
+        console.log("stack loop");
+		if(!itemLoopStopped){
+			getStack();
+			setTimeout(stackLoop, stackTimingMS);
+		}
+	}
+
+	//setupMenu();
+	stackLoop();
+	itemLoop();
+
+
+});
+</script>
+  </body>
+</html>
+
+

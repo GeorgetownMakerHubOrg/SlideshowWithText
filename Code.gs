@@ -2,7 +2,6 @@ var filedbid = "1DGxWAaaZFvgRXvrEo8H7hXNufT0kYfCvpaY3Yq_LXxA";
 var filetable = SpreadsheetApp.openById(filedbid);
 
 
-
 /*
 ================================ DOGET =====================================
 This functions gets called when the pages loads every time.
@@ -10,7 +9,14 @@ This functions gets called when the pages loads every time.
 */
 function doGet(e) {
   Logger.log("Opening page...");  
-  var html = HtmlService.createTemplateFromFile('index').evaluate();
+  parameter = e.parameter;
+  var page= e.parameter.page;
+  if(!page){
+    page = 'index';
+  }
+  
+  Logger.log(page);
+  var html = HtmlService.createTemplateFromFile(page).evaluate();
   html.addMetaTag('viewport', 'width=device-width, initial-scale=1');
   return html;
 }
@@ -244,4 +250,43 @@ function uploadFileToGoogleDrive(data, file, text) {
     return f.toString();
   }
 
+}
+
+
+function saveImage(){
+  
+}
+
+function getAllFileData(){
+  var allFileData = filetable
+  .getActiveSheet()
+  .getDataRange()
+  .getValues();
+ 
+  var fileData = dataIntoHashRows(allFileData, 0, 1); //, function(row){ return row['NetId'] == netId;}).data;  
+  
+  Logger.log(fileData);
+  
+  for( var i = 0; i < fileData.data.length ; i++){
+    var name = fileData.data[i].filename;
+    
+  }
+  
+  return JSON.parse(JSON.stringify(fileData));
+}
+
+function getFileBlob(filename){
+  //https://developers.google.com/apps-script/reference/base/blob
+ Logger.log("looking for " + filename);
+ var files = DriveApp.getFilesByName(filename);
+ while (files.hasNext()) {
+   var file = files.next();
+   var blob = file.getBlob();
+   Logger.log("got blob");
+   return  { blob: blob.getBytes(),
+             contentType : blob.getContentType()
+           };
+ } 
+ Logger.log("returning false");
+ return false;
 }
