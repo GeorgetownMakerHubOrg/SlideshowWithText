@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<base target="_top">
+		  
+		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">  
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" type="text/css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		  <?!= include("STYLESHEET"); ?>   
+
+		<script
+		  src="https://code.jquery.com/jquery-3.2.1.min.js"
+		  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+		  crossorigin="anonymous"></script>
+		<script
+		  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+		  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+		  crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js" integrity="sha384-feJI7QwhOS+hwpX2zkaeJQjeiwlhOP+SdQDqhgvvo1DsjtiSQByFdThsxO669S2D" crossorigin="anonymous"></script>
+		  
+<!-- remove this if you use Modernizr -->
+	<script>(function(e,t,n){var r=e.querySelectorAll("html")[0];r.className=r.className.replace(/(^|\s)no-js(\s|$)/,"$1js$2")})(document,window,0);</script>          
+          
+  </head>
+  <body>
+<div class="container" role="main">
+	<h1>Add to Slideshow</h1>
+	<form id="theform" method="post" action="https://css-tricks.com/examples/DragAndDropFileUploading//?" enctype="multipart/form-data" novalidate class="box">
+
+		
+		<div class="box__input">
+			<svg class="box__icon" xmlns="http://www.w3.org/2000/svg" width="50" height="43" viewBox="0 0 50 43"><path d="M48.4 26.5c-.9 0-1.7.7-1.7 1.7v11.6h-43.3v-11.6c0-.9-.7-1.7-1.7-1.7s-1.7.7-1.7 1.7v13.2c0 .9.7 1.7 1.7 1.7h46.7c.9 0 1.7-.7 1.7-1.7v-13.2c0-1-.7-1.7-1.7-1.7zm-24.5 6.1c.3.3.8.5 1.2.5.4 0 .9-.2 1.2-.5l10-11.6c.7-.7.7-1.7 0-2.4s-1.7-.7-2.4 0l-7.1 8.3v-25.3c0-.9-.7-1.7-1.7-1.7s-1.7.7-1.7 1.7v25.3l-7.1-8.3c-.7-.7-1.7-.7-2.4 0s-.7 1.7 0 2.4l10 11.6z"/></svg>
+			<input type="file" name="files[]" id="file" class="box__file" data-multiple-caption="{count} files selected" multiple />
+			<label for="file" class="filelabel"><strong>Choose a file</strong><span class="box__dragndrop"> or drag it here</span>.</label>
+            <textarea name="description" class="description"  rows="10" cols="56"></textarea>
+			<button type="submit" class="box__button">Upload</button>
+		</div>
+
+		
+		<div class="box__uploading">Uploading&hellip;</div>
+		<div class="box__success">Done! <a href="https://css-tricks.com/examples/DragAndDropFileUploading//?" class="box__restart" role="button">Upload more?</a></div>
+		<div class="box__error">Error! <span></span>. <a href="https://css-tricks.com/examples/DragAndDropFileUploading//?" class="box__restart" role="button">Try again!</a></div>
+	</form>
+
+</div>
+
+
+
+<script>
+
+
+/*
+
+
+  // Upload the file to Google Drive
+  reader.onloadend = function(e) {
+    google.script.run
+      .withSuccessHandler(showMessage)
+      .uploadFileToGoogleDrive(
+         e.target.result, file.name, 
+         $('input#name').val(), 
+         $('input#email').val()
+      );
+  };
+
+  // Read the file on form submit
+  function submitForm() {
+    file = $('#file')[0].files[0];
+    showMessage("Uploading file..");
+    reader.readAsDataURL(file);
+  }
+
+*/
+
+
+	'use strict';
+
+    var currentFile, 
+      reader = new FileReader();
+
+	;( function( $, window, document, undefined )
+	{
+		// feature detection for drag&drop upload
+
+		var isAdvancedUpload = function()
+			{
+				var div = document.createElement( 'div' );
+				return ( ( 'draggable' in div ) || ( 'ondragstart' in div && 'ondrop' in div ) ) && 'FormData' in window && 'FileReader' in window;
+			}();
+
+
+		// applying the effect for every form
+
+		$( '.box' ).each( function()
+		{
+			var $form		 = $( this ),
+				$input		 = $form.find( 'input[type="file"]' ),
+				$label		 = $form.find( 'label' ),
+				$errorMsg	 = $form.find( '.box__error span' ),
+				$restart	 = $form.find( '.box__restart' ),
+				droppedFiles = false,
+				showFiles	 = function( files )
+				{
+					$label.text( files.length > 1 ? ( $input.attr( 'data-multiple-caption' ) || '' ).replace( '{count}', files.length ) : files[ 0 ].name );
+				};
+
+			// letting the server side to know we are going to make an Ajax request
+			$form.append( '<input type="hidden" name="ajax" value="1" />' );
+
+			// automatically submit the form on file select
+            /*
+			$input.on( 'change', function( e )
+			{
+            console.log("autosubmit");
+				showFiles( e.target.files );
+
+				
+				$form.trigger( 'submit' );
+
+				
+			});
+            */
+
+			// drag&drop files if the feature is available
+			if( isAdvancedUpload )
+			{
+               console.log("isAdvancedUpload");
+				$form
+				.addClass( 'has-advanced-upload' ) // letting the CSS part to know drag&drop is supported by the browser
+				.on( 'drag dragstart dragend dragover dragenter dragleave drop', function( e )
+				{
+					// preventing the unwanted behaviours
+					e.preventDefault();
+					e.stopPropagation();
+				})
+				.on( 'dragover dragenter', function() //
+				{
+					$form.addClass( 'is-dragover' );
+				})
+				.on( 'dragleave dragend drop', function()
+				{
+					$form.removeClass( 'is-dragover' );
+				})
+				.on( 'drop', function( e )
+				{
+					droppedFiles = e.originalEvent.dataTransfer.files; // the files that were dropped
+					showFiles( droppedFiles );			
+				});
+			}
+
+
+			// if the form was submitted
+
+			$form.on( 'submit', function( e )
+			{
+            
+                console.log("submittin");
+				// preventing the duplicate submissions if the current one is in progress
+				if( $form.hasClass( 'is-uploading' ) ) return false;
+
+				$form.addClass( 'is-uploading' ).removeClass( 'is-error' );
+
+				if( isAdvancedUpload ) // ajax file upload for modern browsers
+				{
+                  console.log("modern");
+                  var now = Date.now().toString();
+                
+                  reader.onloadend = function(e) {
+                    console.log(e.target);
+                    console.log($(".description").val());
+                    console.log(now + currentFile.name);
+                    google.script.run
+                      .withSuccessHandler(function(data){
+                        console.log("success");
+                        console.log(data);
+                        // reset display
+                        droppedFiles = false;
+                        $form.removeClass( 'is-uploading' );
+                        $("#theform")[0].reset();
+                        var control = $("#file");
+                        $(".filelabel").html('<strong>Choose a file</strong><span class="box__dragndrop"> or drag it here</span>.');
+                        control.replaceWith( control = control.clone( true ) );                        
+                        $(".description").val("");
+                      })
+                      .withFailureHandler(function(data){
+                        console.log("error");
+                        console.log(data);   
+                      })
+                      .uploadFileToGoogleDrive(
+                        e.target.result, now + currentFile.name, $(".description").val()
+                      );
+                    };
+					e.preventDefault();
+
+					// gathering the form data
+					var ajaxData = new FormData( $form.get( 0 ) );
+                    console.log(ajaxData);
+					if( droppedFiles )
+					{
+						$.each( droppedFiles, function( i, file )
+						{
+                          console.log(file);
+                          currentFile = file;
+						  reader.readAsDataURL(file);
+						});
+					}
+				}
+				else // fallback Ajax solution upload for older browsers
+				{
+                  console.log("not doing it");
+
+				}
+			});
+
+
+			// restart the form if has a state of error/success
+
+			$restart.on( 'click', function( e )
+			{
+				e.preventDefault();
+				$form.removeClass( 'is-error is-success' );
+				$input.trigger( 'click' );
+			});
+
+			// Firefox focus bug fix for file input
+			$input
+			.on( 'focus', function(){ $input.addClass( 'has-focus' ); })
+			.on( 'blur', function(){ $input.removeClass( 'has-focus' ); });
+		});
+
+	})( jQuery, window, document );
+
+</script>
+
+</body> 
+</html>
+
+
