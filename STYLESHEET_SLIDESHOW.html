@@ -7,7 +7,9 @@
 }
 
 body {
-	background: #333;
+/*	background: #333;*/
+background: #e5edf1;
+padding-left: 10px;
 }
 
 html {
@@ -17,7 +19,8 @@ html {
 .grid-sizer { width: 48%; }
 .gutter-sizer { width: 2%; }
 .item { 
-	background: #886;
+/*	background: #886; */
+    background: #555577;
 	width:48%; 
     border: 2px solid;
     border-radius: 25px;
@@ -27,9 +30,23 @@ html {
 
 img {
     border-radius: 20px;
-
+    width: 75%;
+    float: left;
+    padding-right: 10px;
 }
 
+.item .caption {
+	font-family: sans-serif;
+    font-size: 1.2em;
+    color: white; 
+    line-height: .9;
+  	text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000;
+
+}
 .fa {
 	color: white;
 }
@@ -54,9 +71,7 @@ img {
 	font-style: italic;
 }
 
-.item .caption {
-	font-family: sans-serif;
-}
+
 
 
 @media screen and (max-width: 1224px) {
@@ -120,6 +135,10 @@ a {
 	margin-left: -8px;
 	margin-top: -8px;
 	width: 15px;
+}
+
+.stopped i {
+  color: red;
 }
 
 </style>

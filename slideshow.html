@@ -25,7 +25,6 @@
     
   </head>
   <body>
-  this??
   <img id="testimg" src=""/>
 <div class="masonry js-masonry" id="container">
 		<div class="menuicon"><i class="fa fa-cog"></i></div>
@@ -76,7 +75,7 @@ msnry = new Masonry( container, {
 
 	var itemTimingMS = 5000;
 	var maxStackSize = 30;
-	var maxPlacedItems = 20;
+	var maxPlacedItems = 5;
 	var stackTimingMS = itemTimingMS * maxStackSize;
 
 	var searchTerms = ["gumakerhub"];
@@ -103,13 +102,16 @@ msnry = new Masonry( container, {
       .withSuccessHandler(function(data){
         console.log(data);
         dbItemStack = data.data;
+        dbItemStack.sort(function(a, b){
+          return a.timestamp > b.timestamp;
+        })
         console.log(dbItemStack);
       }).
       getAllFileData();
     
     }
 
-
+    var blobTexts = {};
     var currentIndex = 0;
     
     var loadNewItem = function(index){
@@ -118,38 +120,31 @@ msnry = new Masonry( container, {
       if(!item){
         return;
       }
-      console.log(item);
-      google.script.run
-      .withFailureHandler(function(msg){
-        console.log("Error");
-        console.log(msg);
-      })
-      .withSuccessHandler(function(data){
-        console.log("got file blob");
-        console.log(data);
-        console.log(typeof data.blob[0]);
-        var bytes = new Uint8Array(data.blob.length);
-        for (var i=0; i<data.blob.length; i++){
-//          console.log(data.blob.charCodeAt(i));
-          bytes[i] = data.blob[i];        
-        }
-        var blobtext = URL.createObjectURL(new Blob(bytes, {type: data.contentType}));
-        console.log(blobtext);
-        $("#testimg").attr("src",blobtext);
-      })
-      .getFileBlob(item.filename);
+      if(blobTexts[item.filename]){
+        placeItem(blobTexts[item.filename], item.description, item.timestamp);
+        return;
+      }
+      (function(_item){
+        google.script.run
+        .withFailureHandler(function(msg){
+          console.log("Error");
+          console.log(msg);
+        })
+        .withSuccessHandler(function(data){
+          var bytes = new Uint8Array(data.blob);
+          var blobtext = URL.createObjectURL(new Blob([bytes], {type: data.contentType}));
+          blobTexts[_item.filename] = blobtext;
+          placeItem(blobtext, _item.description, _item.timestamp);
+          //$("#testimg").attr("src",blobtext);
+        })
+        .getFileBlob(_item.filename);
+      })(item);   
     }
 
-	var placeItem = function(item){
+	var placeItem = function(imgUrl, text, timestamp){
 
-		var imgUrl = false;
-		var imgString = "";
-		if(item.imgUrl){
-			imgUrl = item.imgUrl;
-			imgString = "<img width='100%' src='"+imgUrl+"'/>";
-		}
+		var	imgString = "<img width='100%' src='"+imgUrl+"'/>";
 		console.log(item);
-		var text = item.text;
 		var item_class="";
 		var sizer_class= "item";
 		if(first){
@@ -157,8 +152,10 @@ msnry = new Masonry( container, {
 			first = false;
 		}
 //		item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='metadata'>"+item.source+": "+ item.user+"</span>&nbsp;<span class='time'>"+item.time+"</span></div>").hide();
-		item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='metadata'> "+ item.user+"</span>&nbsp;<span class='time'>"+item.time+"</span></div>").hide();
-		$(".caption", item).linkify(function (links){ $(links).attr("target", "_blank"); });
+//		item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='metadata'> "+ item.user+"</span>&nbsp;<span class='time'>"+item.time+"</span></div>").hide();
+//		var item = $("<div class='"+sizer_class+" "+item_class+"'>"+imgString+"<span class='caption'>"+text+"</span>&nbsp;<span class='time'>"+timestamp+"</span></div>").hide();
+		var item = $("<div class='"+sizer_class+" "+item_class+"'><div class='image_and_caption'>"+imgString+"<span class='caption' >"+text+"</span></div></div>").hide();
+	//	$(".caption", item).linkify(function (links){ $(links).attr("target", "_blank"); });
 		$("#container").prepend(item);
 		imagesLoaded(item, function() {
 			console.log("image loaded");
@@ -166,6 +163,16 @@ msnry = new Masonry( container, {
 			msnry.prepended(item);
 	//	  msnry.layout();
 		});		
+        
+        placedItems.unshift(item);
+        if(placedItems.length > dbItemStack.length){
+			console.log("removing");
+			removeItem = placedItems.pop();
+			console.log(removeItem);
+			msnry.remove(removeItem);
+			$(removeItem).remove();
+		}
+
 
 
 	}
@@ -177,11 +184,17 @@ msnry = new Masonry( container, {
 	var itemLoop = function(){
 		if(!itemLoopStopped){
 			loadNewItem(currentIndex);
-		}
-        currentIndex++;
-        if(currentIndex >= dbItemStack.length){
-          currentIndex = 0;
-        }        
+            currentIndex++;
+            if(currentIndex >= dbItemStack.length - 2 ){
+            // getting close to end, lookup again.
+              getStack();
+            }
+            if(currentIndex >= dbItemStack.length){
+              currentIndex = 0;
+             }
+        }else{
+          console.log("not doing it");
+        }
 		setTimeout(itemLoop, itemTimingMS);
 	}
 
@@ -192,11 +205,24 @@ msnry = new Masonry( container, {
 			setTimeout(stackLoop, stackTimingMS);
 		}
 	}
+    getStack();
 
 	//setupMenu();
 	stackLoop();
 	itemLoop();
 
+
+    $(".menuicon").click(function(){
+      console.log("clicked");
+      itemLoopStopped = !itemLoopStopped;
+      if(itemLoopStopped){
+        console.log("stopped");
+        $(".menuicon").addClass("stopped");
+      }else{
+        console.log("started");
+        $(".menuicon").removeClass("stopped");  
+      }
+    });
 
 });
 </script>
